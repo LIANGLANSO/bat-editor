@@ -1,0 +1,35 @@
+{
+  "identifier": "default",
+  "description": "Default permissions",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "shell:allow-open",
+    "shell:allow-execute",
+    "shell:allow-spawn",
+    "dialog:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "dialog:allow-message",
+    "dialog:allow-ask",
+    "fs:default",
+    "fs:allow-read",
+    "fs:allow-write",
+    "fs:allow-exists",
+    "fs:allow-mkdir",
+    "fs:allow-remove",
+    "fs:allow-rename",
+    "fs:allow-read-file",
+    "fs:allow-write-file",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        { "path": "$APPDATA/**" },
+        { "path": "$DESKTOP/**" },
+        { "path": "$DOCUMENT/**" },
+        { "path": "$DOWNLOAD/**" },
+        { "path": "$HOME/**" }
+      ]
+    }
+  ]
+}
