@@ -13,18 +13,19 @@ onMounted(async () => {
   try {
     const monaco = await import("monaco-editor")
 
-    // Worker 配置
-    const baseUrl = "/node_modules/monaco-editor/esm/"
+    // 使用 Vite 的 new URL + import.meta.url 方式加载 Worker
+    // 这样在 dev 和 production 模式下都能正确解析
     ;(self as any).MonacoEnvironment = {
       getWorker(_: any, label: string) {
-        switch (label) {
-          case "json": return new Worker(baseUrl + "vs/language/json/json.worker.js", { type: "module" })
-          case "css": return new Worker(baseUrl + "vs/language/css/css.worker.js", { type: "module" })
-          case "html": return new Worker(baseUrl + "vs/language/html/html.worker.js", { type: "module" })
-          case "typescript":
-          case "javascript": return new Worker(baseUrl + "vs/language/typescript/ts.worker.js", { type: "module" })
-          default: return new Worker(baseUrl + "vs/editor/editor.worker.js", { type: "module" })
-        }
+        if (label === "json")
+          return new Worker(new URL("monaco-editor/esm/vs/language/json/json.worker.js", import.meta.url), { type: "module" })
+        if (label === "css" || label === "scss" || label === "less")
+          return new Worker(new URL("monaco-editor/esm/vs/language/css/css.worker.js", import.meta.url), { type: "module" })
+        if (label === "html" || label === "handlebars" || label === "razor")
+          return new Worker(new URL("monaco-editor/esm/vs/language/html/html.worker.js", import.meta.url), { type: "module" })
+        if (label === "typescript" || label === "javascript")
+          return new Worker(new URL("monaco-editor/esm/vs/language/typescript/ts.worker.js", import.meta.url), { type: "module" })
+        return new Worker(new URL("monaco-editor/esm/vs/editor/editor.worker.js", import.meta.url), { type: "module" })
       },
     }
 
@@ -85,7 +86,7 @@ onMounted(async () => {
   } catch (e: any) {
     useFallback.value = true
     displayCode.value = store.generatedCode
-    store.addLog("代码编辑器使用回退模式", "warning")
+    // 不输出详细错误信息，只是静默降级
   }
 })
 
@@ -99,9 +100,7 @@ watch(() => store.generatedCode, () => {
     editor.setValue(store.generatedCode)
     if (pos) editor.setPosition(pos)
   }
-  if (useFallback.value) {
-    displayCode.value = store.generatedCode
-  }
+  if (useFallback.value) displayCode.value = store.generatedCode
 })
 
 watch(() => store.isManualMode, (n) => {
@@ -121,13 +120,8 @@ function checkSyntax() {
     if ((t.match(/"/g) || []).length % 2 !== 0)
       errors.push("第 " + (i + 1) + " 行: 引号未闭合")
   })
-  if (errors.length === 0) {
-    store.addLog("语法检查通过", "success")
-    ElMessage.success("语法检查通过")
-  } else {
-    errors.forEach((err) => store.addLog("  " + err, "warning"))
-    ElMessage.warning("发现 " + errors.length + " 个语法问题")
-  }
+  if (errors.length === 0) { store.addLog("语法检查通过", "success"); ElMessage.success("语法检查通过") }
+  else { errors.forEach((err) => store.addLog("  " + err, "warning")); ElMessage.warning("发现 " + errors.length + " 个语法问题") }
 }
 
 function formatCode() {
